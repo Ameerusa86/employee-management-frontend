@@ -25,21 +25,36 @@ interface Employee {
 
 export default function EmployeeTable() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [search, setSearch] = useState(""); // Search term
+  const [status, setStatus] = useState(""); // Filter by AccountStatus
   const [page, setPage] = useState(1); // Current page
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const [isLoading, setIsLoading] = useState(false); // Loading state
 
-  const pageSize = 10; // Employees per page
+  const pageSize = 20; // Employees per page
 
   const fetchEmployees = async () => {
     setIsLoading(true); // Set loading state
     try {
-      const response = await axios.get("http://localhost:5000/api/employees");
-      console.log("Response Data:", response.data); // Debug API response
+      const response = await axios.get(
+        "http://localhost:5000/api/employees/search",
+        {
+          params: {
+            search: search.trim() || null, // Send `null` if search is empty
+            status: status || null, // Send `null` if no status is selected
+            page,
+            pageSize,
+          },
+        }
+      );
 
-      // Directly set employees if the API returns an array
-      setEmployees(response.data);
-      setTotalPages(1); // Set total pages to 1 as there's no pagination in this case
+      console.log("Response Data:", response.data);
+
+      const { employees = [], totalEmployees = 0 } = response.data;
+
+      // Set employees and total pages
+      setEmployees(employees);
+      setTotalPages(Math.ceil(totalEmployees / pageSize));
     } catch (error) {
       console.error(
         "Error fetching employees:",
@@ -56,11 +71,31 @@ export default function EmployeeTable() {
 
   useEffect(() => {
     fetchEmployees();
-  }, [page]);
+  }, [search, status, page]);
 
   return (
     <div className="bg-white p-4 shadow rounded">
       <h3 className="text-lg font-bold mb-4">Employees</h3>
+
+      {/* Search and Filter */}
+      <div className="flex gap-4 mb-4">
+        <input
+          type="text"
+          placeholder="Search by name or email"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border rounded p-2 w-1/2"
+        />
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="border rounded p-2 w-1/4"
+        >
+          <option value="">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
 
       {/* Table */}
       <Table>
