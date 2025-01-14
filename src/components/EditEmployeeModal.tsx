@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 interface Employee {
   employeeID: number;
@@ -32,6 +33,8 @@ export default function EditEmployeeModal({
   const [formData, setFormData] = useState<Employee>({ ...employee });
   const [isOpen, setIsOpen] = useState(false); // Track modal state
 
+  const { toast } = useToast();
+
   const handleSubmit = async () => {
     try {
       await axios.put(
@@ -40,6 +43,10 @@ export default function EditEmployeeModal({
       );
       onUpdate(); // Trigger a refresh in the parent component
       setIsOpen(false); // Close modal after successful update
+      toast({
+        title: `${formData.firstName} ${formData.lastName} updated successfully`,
+        description: `Employee has been updated.`,
+      });
     } catch (error) {
       console.error(
         "Error updating employee:",

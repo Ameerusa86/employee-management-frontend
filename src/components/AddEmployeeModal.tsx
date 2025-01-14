@@ -8,10 +8,12 @@ import {
   DialogTitle,
   DialogFooter,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
   const [formData, setFormData] = useState({
@@ -23,6 +25,8 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
     dateCreated: new Date().toISOString(), // Set current date for DateCreated
     dateModified: new Date().toISOString(), // Set current date for DateModified
   });
+
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     try {
@@ -36,6 +40,10 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
         dateCreated: new Date().toISOString(),
         dateModified: new Date().toISOString(),
       });
+      toast({
+        title: `${formData.firstName} ${formData.lastName} Added Successfully`,
+        description: `The employee has been added successfully to the database and is now active, a new file has been created for the employee.`,
+      });
       if (onAdd) {
         onAdd(); // Call parent function to refresh employee table
       } else {
@@ -43,6 +51,11 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
       }
     } catch (error) {
       console.error("Error adding employee:", error);
+      toast({
+        title: `${formData.firstName} ${formData.lastName} Failed to be Added`,
+        description: "Failed to add employee",
+        type: "foreground",
+      });
     }
   };
 
@@ -86,22 +99,24 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
           />
         </div>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() =>
-              setFormData({
-                firstName: "",
-                lastName: "",
-                email: "",
-                jobTitle: "",
-                accountStatus: "Active",
-                dateCreated: new Date().toISOString(),
-                dateModified: new Date().toISOString(),
-              })
-            }
-          >
-            Cancel
-          </Button>
+          <DialogClose asChild>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setFormData({
+                  firstName: "",
+                  lastName: "",
+                  email: "",
+                  jobTitle: "",
+                  accountStatus: "Active",
+                  dateCreated: new Date().toISOString(),
+                  dateModified: new Date().toISOString(),
+                })
+              }
+            >
+              Cancel
+            </Button>
+          </DialogClose>
           <Button onClick={handleSubmit}>Submit</Button>
         </DialogFooter>
       </DialogContent>

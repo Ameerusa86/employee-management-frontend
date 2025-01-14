@@ -14,6 +14,7 @@ import {
 import EditEmployeeModal from "@/components/EditEmployeeModal";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import AddEmployeeModal from "./AddEmployeeModal";
+import { useRouter } from "next/navigation";
 
 interface Employee {
   employeeID: number;
@@ -31,40 +32,33 @@ export default function EmployeeTable() {
   const [page, setPage] = useState(1); // Current page
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const [isLoading, setIsLoading] = useState(false); // Loading state
+  const router = useRouter();
 
   const pageSize = 10; // Employees per page
 
   const fetchEmployees = async () => {
-    setIsLoading(true); // Set loading state
+    setIsLoading(true);
     try {
       const response = await axios.get(
         "http://localhost:5000/api/employees/search",
         {
           params: {
-            search: search.trim() || null, // Send `null` if search is empty
-            status: status || null, // Send `null` if no status is selected
+            search: search.trim() || null,
+            status: status || null,
             page,
             pageSize,
           },
         }
       );
-
       const { employees = [], totalEmployees = 0 } = response.data;
-
-      // Set employees and total pages
       setEmployees(employees);
       setTotalPages(Math.ceil(totalEmployees / pageSize));
     } catch (error) {
-      console.error(
-        "Error fetching employees:",
-        axios.isAxiosError(error) && error.response
-          ? error.response.data
-          : error
-      );
-      setEmployees([]); // Reset employees on error
-      setTotalPages(1); // Reset total pages
+      console.error("Error fetching employees:", error);
+      setEmployees([]);
+      setTotalPages(1);
     } finally {
-      setIsLoading(false); // End loading state
+      setIsLoading(false);
     }
   };
 
@@ -73,108 +67,99 @@ export default function EmployeeTable() {
   }, [search, status, page]);
 
   return (
-    <div className="bg-white p-8 shadow-lg rounded-lg max-w-full">
-      <div className="flex flex-wrap items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold">Employee Management</h3>
-        <AddEmployeeModal onAdd={fetchEmployees} />
-      </div>
+    <div className="bg-white p-4 shadow rounded">
+      <h3 className="text-lg font-bold mb-4">Employees</h3>
 
       {/* Search and Filter */}
-      <div className="flex flex-wrap gap-4 mb-6">
+      <div className="flex gap-4 mb-4">
         <input
           type="text"
           placeholder="Search by name or email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-grow border border-gray-300 rounded-lg p-3"
+          className="border rounded p-2 w-1/2"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="border border-gray-300 rounded-lg p-3"
+          className="border rounded p-2 w-1/4"
         >
           <option value="">All Statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
+        <AddEmployeeModal onAdd={fetchEmployees} />
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <Table className="table-auto w-full border-collapse border border-gray-200">
-          <TableHeader>
-            <TableRow className="bg-gray-100">
-              <TableHead className="text-left px-4 py-2">#</TableHead>
-              <TableHead className="text-left px-4 py-2">First Name</TableHead>
-              <TableHead className="text-left px-4 py-2">Last Name</TableHead>
-              <TableHead className="text-left px-4 py-2">Email</TableHead>
-              <TableHead className="text-left px-4 py-2">Job Title</TableHead>
-              <TableHead className="text-left px-4 py-2">Status</TableHead>
-              <TableHead className="text-left px-4 py-2">Actions</TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>#</TableHead>
+            <TableHead>First Name</TableHead>
+            <TableHead>Last Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Job Title</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center">
+                Loading...
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  Loading...
+          ) : employees.length > 0 ? (
+            employees.map((employee, index) => (
+              <TableRow key={employee.employeeID}>
+                <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
+                <TableCell>{employee.firstName}</TableCell>
+                <TableCell>{employee.lastName}</TableCell>
+                <TableCell>{employee.email}</TableCell>
+                <TableCell>{employee.jobTitle}</TableCell>
+                <TableCell>{employee.accountStatus}</TableCell>
+                <TableCell className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      router.push(`/employees/${employee.employeeID}`)
+                    }
+                  >
+                    View Details
+                  </Button>
+                  <EditEmployeeModal
+                    employee={employee}
+                    onUpdate={fetchEmployees}
+                  />
+                  <DeleteConfirmationModal
+                    employeeId={employee.employeeID}
+                    employeeName={`${employee.firstName} ${employee.lastName}`}
+                    onDelete={fetchEmployees}
+                  />
                 </TableCell>
               </TableRow>
-            ) : employees.length > 0 ? (
-              employees.map((employee, index) => (
-                <TableRow
-                  key={employee.employeeID}
-                  className="hover:bg-gray-50 transition"
-                >
-                  <TableCell className="px-4 py-2">
-                    {(page - 1) * pageSize + index + 1}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">
-                    {employee.firstName}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">
-                    {employee.lastName}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">{employee.email}</TableCell>
-                  <TableCell className="px-4 py-2">
-                    {employee.jobTitle}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">
-                    {employee.accountStatus}
-                  </TableCell>
-                  <TableCell className="px-4 py-2 flex gap-2">
-                    <EditEmployeeModal
-                      employee={employee}
-                      onUpdate={fetchEmployees}
-                    />
-                    <DeleteConfirmationModal
-                      employeeId={employee.employeeID}
-                      employeeName={`${employee.firstName} ${employee.lastName}`}
-                      onDelete={fetchEmployees}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No employees found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center">
+                No employees found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-6">
+      <div className="flex justify-between items-center mt-4">
         <Button
           onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
           disabled={page === 1}
         >
           Previous
         </Button>
-        <span className="text-gray-600">
+        <span>
           Page {page} of {isNaN(totalPages) ? 1 : totalPages}
         </span>
         <Button

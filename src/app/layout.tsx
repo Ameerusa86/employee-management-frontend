@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { K2D } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,7 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${manrope.className}`}>{children}</body>
+      <body className={`${manrope.className}`}>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

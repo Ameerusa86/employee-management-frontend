@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
+import { toast, useToast } from "@/hooks/use-toast";
 
 interface DeleteConfirmationModalProps {
   employeeId: number;
@@ -22,10 +23,16 @@ export default function DeleteConfirmationModal({
   employeeName,
   onDelete,
 }: DeleteConfirmationModalProps) {
+  const { toast } = useToast();
+
   const handleDelete = async () => {
     try {
       await axios.delete(`http://localhost:5000/api/employees/${employeeId}`);
       onDelete(); // Trigger refresh in the parent component
+      toast({
+        title: `${employeeName} has been Deleted`,
+        description: `Employee has been deleted successfully`,
+      });
     } catch (error) {
       console.error("Error deleting employee:", error);
     }
