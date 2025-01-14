@@ -11,10 +11,12 @@ export default function Home() {
           <h1 className="text-xl font-bold">Employee Management</h1>
         </header>
         <main className="p-6">
-          <h1 className="text-6xl font-bold">Welcome to Employee Management</h1>
+          <h1 className="text-6xl font-bold mb-6">
+            Welcome to Employee Management
+          </h1>
           <div className="mb-6 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Employee Management</h2>
-            <AddEmployeeModal />
+            {/* <h2 className="text-lg font-semibold">Employee Management</h2> */}
+            {/* <AddEmployeeModal /> */}
           </div>
           <EmployeeTable />
         </main>

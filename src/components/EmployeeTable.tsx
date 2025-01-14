@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import EditEmployeeModal from "@/components/EditEmployeeModal";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
+import AddEmployeeModal from "./AddEmployeeModal";
 
 interface Employee {
   employeeID: number;
@@ -31,7 +32,7 @@ export default function EmployeeTable() {
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const [isLoading, setIsLoading] = useState(false); // Loading state
 
-  const pageSize = 20; // Employees per page
+  const pageSize = 10; // Employees per page
 
   const fetchEmployees = async () => {
     setIsLoading(true); // Set loading state
@@ -47,8 +48,6 @@ export default function EmployeeTable() {
           },
         }
       );
-
-      console.log("Response Data:", response.data);
 
       const { employees = [], totalEmployees = 0 } = response.data;
 
@@ -95,12 +94,14 @@ export default function EmployeeTable() {
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
+        <AddEmployeeModal onAdd={fetchEmployees} />
       </div>
 
       {/* Table */}
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>#</TableHead>
             <TableHead>First Name</TableHead>
             <TableHead>Last Name</TableHead>
             <TableHead>Email</TableHead>
@@ -112,13 +113,17 @@ export default function EmployeeTable() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center">
+              <TableCell colSpan={7} className="text-center">
                 Loading...
               </TableCell>
             </TableRow>
           ) : employees.length > 0 ? (
-            employees.map((employee) => (
+            employees.map((employee, index) => (
               <TableRow key={employee.employeeID}>
+                <TableCell>
+                  {/* Sequence Number */}
+                  {(page - 1) * pageSize + index + 1}
+                </TableCell>
                 <TableCell>{employee.firstName}</TableCell>
                 <TableCell>{employee.lastName}</TableCell>
                 <TableCell>{employee.email}</TableCell>
@@ -139,7 +144,7 @@ export default function EmployeeTable() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="text-center">
+              <TableCell colSpan={7} className="text-center">
                 No employees found.
               </TableCell>
             </TableRow>

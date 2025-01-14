@@ -13,12 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 
-export default function AddEmployeeModal() {
+export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     jobTitle: "",
+    accountStatus: "Active", // Default account status
+    dateCreated: new Date().toISOString(), // Set current date for DateCreated
+    dateModified: new Date().toISOString(), // Set current date for DateModified
   });
 
   const handleSubmit = async () => {
@@ -29,8 +32,15 @@ export default function AddEmployeeModal() {
         lastName: "",
         email: "",
         jobTitle: "",
+        accountStatus: "Active",
+        dateCreated: new Date().toISOString(),
+        dateModified: new Date().toISOString(),
       });
-      window.location.reload(); // Refresh the employee table
+      if (onAdd) {
+        onAdd(); // Call parent function to refresh employee table
+      } else {
+        window.location.reload(); // Refresh the page if no onAdd function is provided
+      }
     } catch (error) {
       console.error("Error adding employee:", error);
     }
@@ -84,6 +94,9 @@ export default function AddEmployeeModal() {
                 lastName: "",
                 email: "",
                 jobTitle: "",
+                accountStatus: "Active",
+                dateCreated: new Date().toISOString(),
+                dateModified: new Date().toISOString(),
               })
             }
           >
