@@ -7,12 +7,9 @@ export default function Home() {
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-screen py-2">
-        <header className="p-4 bg-white shadow">
-          <h1 className="text-xl font-bold">Employee Management</h1>
-        </header>
-        <main className="p-6">
-          <h1 className="text-6xl font-bold mb-6">
-            Welcome to Employee Management
+        <main className="p-6 max-w-screen-2xl">
+          <h1 className="text-6xl font-bold mb-6 text-center">
+            Employee Management
           </h1>
           <div className="mb-6 flex justify-between items-center">
             {/* <h2 className="text-lg font-semibold">Employee Management</h2> */}
