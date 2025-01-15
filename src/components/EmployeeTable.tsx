@@ -51,6 +51,7 @@ export default function EmployeeTable() {
         }
       );
       const { employees = [], totalEmployees = 0 } = response.data;
+
       setEmployees(employees);
       setTotalPages(Math.ceil(totalEmployees / pageSize));
     } catch (error) {

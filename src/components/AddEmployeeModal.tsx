@@ -28,8 +28,6 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
     email: "",
     jobTitle: "",
     accountStatus: "Active",
-    dateCreated: new Date().toISOString(),
-    dateModified: new Date().toISOString(),
   });
 
   const [availableAccesses, setAvailableAccesses] = useState<string[]>([]); // List of accesses from the database
@@ -41,10 +39,10 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
     const fetchAccesses = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/accessrights"
+          "http://localhost:5000/api/applications"
         );
         setAvailableAccesses(
-          response.data.map((access: any) => access.accessName)
+          response.data.map((application: any) => application.applicationName)
         );
       } catch (error) {
         console.error("Error fetching accesses:", error);
@@ -70,7 +68,11 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
       // Step 1: Create the new employee
       const employeeResponse = await axios.post(
         "http://localhost:5000/api/employees",
-        formData
+        {
+          ...formData,
+          dateCreated: new Date().toISOString(),
+          dateModified: new Date().toISOString(),
+        }
       );
 
       const employeeId = employeeResponse.data.employeeID;
@@ -78,11 +80,13 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
       // Step 2: Add the selected accesses for the new employee
       if (selectedAccesses.length > 0) {
         await Promise.all(
-          selectedAccesses.map((access) =>
-            axios.post(`http://localhost:5000/api/accessrights/${employeeId}`, {
-              accessName: access,
-              dateGranted: new Date().toISOString(),
-            })
+          selectedAccesses.map((accessName) =>
+            axios.post(
+              `http://localhost:5000/api/employees/${employeeId}/accesses`,
+              {
+                applicationName: accessName,
+              }
+            )
           )
         );
       }
@@ -94,8 +98,6 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
         email: "",
         jobTitle: "",
         accountStatus: "Active",
-        dateCreated: new Date().toISOString(),
-        dateModified: new Date().toISOString(),
       });
       setSelectedAccesses([]);
 
@@ -196,8 +198,6 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
                   email: "",
                   jobTitle: "",
                   accountStatus: "Active",
-                  dateCreated: new Date().toISOString(),
-                  dateModified: new Date().toISOString(),
                 });
                 setSelectedAccesses([]);
               }}

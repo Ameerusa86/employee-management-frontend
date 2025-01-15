@@ -26,7 +26,7 @@ interface Employee {
 
 interface AccessRight {
   accessID: number;
-  accessName: string;
+  applicationName: string;
   dateGranted: string;
 }
 
@@ -45,11 +45,17 @@ export default function EmployeeDetails() {
 
       const [employeeResponse, accessRightsResponse] = await Promise.all([
         axios.get(`http://localhost:5000/api/employees/${id}`),
-        axios.get(`http://localhost:5000/api/accessrights/${id}`),
+        axios.get(`http://localhost:5000/api/employees/${id}/accesses`),
       ]);
 
       setEmployee(employeeResponse.data);
-      setAccessRights(accessRightsResponse.data || []);
+      setAccessRights(
+        accessRightsResponse.data.map((access: any) => ({
+          accessID: access.accessID,
+          applicationName: access.application.applicationName, // Map applicationName
+          dateGranted: access.dateGranted,
+        }))
+      );
     } catch (err) {
       console.error("Error fetching employee details:", err);
       setError("Failed to fetch employee details. Please try again later.");
@@ -60,7 +66,9 @@ export default function EmployeeDetails() {
 
   const removeAccess = async (accessID: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/accessrights/${accessID}`);
+      await axios.delete(
+        `http://localhost:5000/api/employees/${id}/accesses/${accessID}`
+      );
       setAccessRights((prev) =>
         prev.filter((access) => access.accessID !== accessID)
       );
@@ -144,7 +152,7 @@ export default function EmployeeDetails() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Access Name</TableHead>
+                <TableHead>Application Name</TableHead>
                 <TableHead>Date Granted</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -152,7 +160,7 @@ export default function EmployeeDetails() {
             <TableBody>
               {accessRights.map((access) => (
                 <TableRow key={access.accessID}>
-                  <TableCell>{access.accessName}</TableCell>
+                  <TableCell>{access.applicationName}</TableCell>
                   <TableCell>
                     {new Date(access.dateGranted).toLocaleDateString()}
                   </TableCell>
