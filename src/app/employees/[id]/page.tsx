@@ -1,30 +1,71 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import ManageAccessModal from "@/components/ManageAccessModal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import AddAccessModal from "@/components/AddAccessModal";
+
+interface Employee {
+  employeeID: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  jobTitle?: string;
+  accountStatus: string;
+}
+
+interface AccessRight {
+  accessID: number;
+  accessName: string;
+  dateGranted: string;
+}
 
 export default function EmployeeDetails() {
   const { id } = useParams();
-  const [employee, setEmployee] = useState<any>(null);
-  const [accessRights, setAccessRights] = useState<any[]>([]);
+  const router = useRouter();
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [accessRights, setAccessRights] = useState<AccessRight[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchEmployeeDetails = async () => {
     try {
-      const employeeResponse = await axios.get(
-        `http://localhost:5000/api/employees/${id}`
-      );
-      setEmployee(employeeResponse.data);
+      setLoading(true);
+      setError(null);
 
-      const accessRightsResponse = await axios.get(
-        `http://localhost:5000/api/AccessRights/${id}`
+      const [employeeResponse, accessRightsResponse] = await Promise.all([
+        axios.get(`http://localhost:5000/api/employees/${id}`),
+        axios.get(`http://localhost:5000/api/accessrights/${id}`),
+      ]);
+
+      setEmployee(employeeResponse.data);
+      setAccessRights(accessRightsResponse.data || []);
+    } catch (err) {
+      console.error("Error fetching employee details:", err);
+      setError("Failed to fetch employee details. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeAccess = async (accessID: number) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/accessrights/${accessID}`);
+      setAccessRights((prev) =>
+        prev.filter((access) => access.accessID !== accessID)
       );
-      setAccessRights(accessRightsResponse.data);
-    } catch (error) {
-      console.error("Error fetching employee details:", error);
+    } catch (err) {
+      console.error("Error removing access right:", err);
+      alert("Failed to remove the access right. Please try again.");
     }
   };
 
@@ -32,78 +73,107 @@ export default function EmployeeDetails() {
     fetchEmployeeDetails();
   }, [id]);
 
+  if (loading) {
+    return (
+      <div className="text-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center">
+        <p className="text-red-500">{error}</p>
+        <Button onClick={() => router.push("/")}>Back to Employees</Button>
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <div className="text-center">
+        <p className="text-gray-500">Employee not found.</p>
+        <Button onClick={() => router.push("/employees")}>
+          Back to Employees
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {employee ? (
-        <div className="bg-white shadow-lg rounded-lg p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                {employee.firstName} {employee.lastName}
-              </h1>
-              <p className="text-gray-600 mt-2">{employee.email}</p>
-              <p className="text-gray-500 mt-1">
-                <strong>Job Title:</strong> {employee.jobTitle || "N/A"}
-              </p>
-              <p className="text-gray-500 mt-1">
-                <strong>Status:</strong>{" "}
-                <span
-                  className={`${
-                    employee.accountStatus === "Active"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  } font-medium`}
-                >
-                  {employee.accountStatus}
-                </span>
-              </p>
-            </div>
-            <div className="mt-4 md:mt-0">
-              <ManageAccessModal
-                employeeId={employee.employeeID}
-                onUpdate={fetchEmployeeDetails}
-              />
-            </div>
+      <div className="bg-white shadow-lg rounded-lg p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {employee.firstName} {employee.lastName}
+            </h1>
+            <p className="text-gray-600 mt-2">{employee.email}</p>
+            <p className="text-gray-500 mt-1">
+              <strong>Job Title:</strong> {employee.jobTitle || "N/A"}
+            </p>
+            <p className="text-gray-500 mt-1">
+              <strong>Status:</strong>{" "}
+              <span
+                className={`${
+                  employee.accountStatus === "Active"
+                    ? "text-green-600"
+                    : "text-red-600"
+                } font-medium`}
+              >
+                {employee.accountStatus}
+              </span>
+            </p>
           </div>
+          <div className="mt-4 md:mt-0">
+            <AddAccessModal
+              employeeId={employee.employeeID}
+              onAccessAdded={fetchEmployeeDetails} // Refresh access list
+            />
+          </div>
+        </div>
 
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Access Rights
-          </h2>
-          {accessRights.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">User Accesses</h2>
+        {accessRights.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Access Name</TableHead>
+                <TableHead>Date Granted</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {accessRights.map((access) => (
-                <div
-                  key={access.accessID}
-                  className="p-4 border rounded-lg shadow-sm bg-gray-50"
-                >
-                  <p className="text-lg font-semibold text-gray-700">
-                    {access.websiteTool}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    <strong>Access Type:</strong> {access.accessType}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    <strong>Assigned On:</strong>{" "}
-                    {new Date(access.dateAssigned).toLocaleDateString()}
-                  </p>
-                </div>
+                <TableRow key={access.accessID}>
+                  <TableCell>{access.accessName}</TableCell>
+                  <TableCell>
+                    {new Date(access.dateGranted).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeAccess(access.accessID)}
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">No access rights assigned.</p>
-          )}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-gray-600">No access rights assigned.</p>
+        )}
 
-          <div className="mt-6 flex justify-end">
-            <Button variant="outline" onClick={() => history.back()}>
-              Back to Employees
-            </Button>
-          </div>
+        <div className="mt-6 flex justify-end">
+          <Button variant="outline" onClick={() => router.push("/")}>
+            Back to Employees
+          </Button>
         </div>
-      ) : (
-        <div className="text-center">
-          <p className="text-gray-500">Loading...</p>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
