@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
-import { toast, useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { use, useEffect, useState } from "react";
 
 interface DeleteConfirmationModalProps {
   employeeId: number;
@@ -24,6 +25,15 @@ export default function DeleteConfirmationModal({
   onDelete,
 }: DeleteConfirmationModalProps) {
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+  }, []);
 
   const handleDelete = async () => {
     try {
@@ -39,7 +49,7 @@ export default function DeleteConfirmationModal({
   };
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="destructive">Delete</Button>
       </DialogTrigger>
@@ -52,7 +62,14 @@ export default function DeleteConfirmationModal({
           action cannot be undone.
         </p>
         <DialogFooter>
-          <Button variant="outline">Cancel</Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
           <Button variant="destructive" onClick={handleDelete}>
             Confirm Delete
           </Button>
