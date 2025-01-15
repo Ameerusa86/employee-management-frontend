@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,16 +27,67 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
     lastName: "",
     email: "",
     jobTitle: "",
-    accountStatus: "Active", // Default account status
-    dateCreated: new Date().toISOString(), // Set current date for DateCreated
-    dateModified: new Date().toISOString(), // Set current date for DateModified
+    accountStatus: "Active",
+    dateCreated: new Date().toISOString(),
+    dateModified: new Date().toISOString(),
   });
 
+  const [availableAccesses, setAvailableAccesses] = useState<string[]>([]); // List of accesses from the database
+  const [selectedAccesses, setSelectedAccesses] = useState<string[]>([]); // Selected accesses
   const { toast } = useToast();
+
+  // Fetch available accesses on component load
+  useEffect(() => {
+    const fetchAccesses = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/accessrights"
+        );
+        setAvailableAccesses(
+          response.data.map((access: any) => access.accessName)
+        );
+      } catch (error) {
+        console.error("Error fetching accesses:", error);
+        toast({
+          title: "Failed to Load Accesses",
+          description:
+            "Could not fetch available accesses. Please try again later.",
+        });
+      }
+    };
+
+    fetchAccesses();
+  }, []);
+
+  const handleAccessChange = (access: string, checked: boolean) => {
+    setSelectedAccesses((prev) =>
+      checked ? [...prev, access] : prev.filter((item) => item !== access)
+    );
+  };
 
   const handleSubmit = async () => {
     try {
-      await axios.post("http://localhost:5000/api/employees", formData);
+      // Step 1: Create the new employee
+      const employeeResponse = await axios.post(
+        "http://localhost:5000/api/employees",
+        formData
+      );
+
+      const employeeId = employeeResponse.data.employeeID;
+
+      // Step 2: Add the selected accesses for the new employee
+      if (selectedAccesses.length > 0) {
+        await Promise.all(
+          selectedAccesses.map((access) =>
+            axios.post(`http://localhost:5000/api/accessrights/${employeeId}`, {
+              accessName: access,
+              dateGranted: new Date().toISOString(),
+            })
+          )
+        );
+      }
+
+      // Reset form data and selected accesses
       setFormData({
         firstName: "",
         lastName: "",
@@ -40,21 +97,24 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
         dateCreated: new Date().toISOString(),
         dateModified: new Date().toISOString(),
       });
+      setSelectedAccesses([]);
+
       toast({
         title: `${formData.firstName} ${formData.lastName} Added Successfully`,
-        description: `The employee has been added successfully to the database and is now active, a new file has been created for the employee.`,
+        description:
+          "The employee and their accesses have been added successfully.",
       });
+
       if (onAdd) {
-        onAdd(); // Call parent function to refresh employee table
+        onAdd(); // Refresh the employee table
       } else {
-        window.location.reload(); // Refresh the page if no onAdd function is provided
+        window.location.reload(); // Refresh the page if no onAdd callback is provided
       }
     } catch (error) {
       console.error("Error adding employee:", error);
       toast({
         title: `${formData.firstName} ${formData.lastName} Failed to be Added`,
-        description: "Failed to add employee",
-        type: "foreground",
+        description: "An error occurred while adding the employee or accesses.",
       });
     }
   };
@@ -97,12 +157,39 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
               setFormData({ ...formData, jobTitle: e.target.value })
             }
           />
+
+          {/* Add Accesses Section */}
+          <div>
+            <h3 className="text-lg font-bold">User Accesses</h3>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  {selectedAccesses.length > 0
+                    ? `${selectedAccesses.length} Selected`
+                    : "Select Accesses"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-4 space-y-2">
+                {availableAccesses.map((access) => (
+                  <div key={access} className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={selectedAccesses.includes(access)}
+                      onCheckedChange={(checked: boolean) =>
+                        handleAccessChange(access, !!checked)
+                      }
+                    />
+                    <span>{access}</span>
+                  </div>
+                ))}
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button
               variant="outline"
-              onClick={() =>
+              onClick={() => {
                 setFormData({
                   firstName: "",
                   lastName: "",
@@ -111,8 +198,9 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
                   accountStatus: "Active",
                   dateCreated: new Date().toISOString(),
                   dateModified: new Date().toISOString(),
-                })
-              }
+                });
+                setSelectedAccesses([]);
+              }}
             >
               Cancel
             </Button>

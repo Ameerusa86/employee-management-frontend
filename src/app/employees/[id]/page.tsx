@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import AddAccessModal from "@/components/AddAccessModal";
+import EditEmployeeModal from "@/components/EditEmployeeModal";
 
 interface Employee {
   employeeID: number;
@@ -126,10 +127,14 @@ export default function EmployeeDetails() {
               </span>
             </p>
           </div>
-          <div className="mt-4 md:mt-0">
+          <div className="mt-4 md:mt-0 flex space-x-2">
             <AddAccessModal
               employeeId={employee.employeeID}
               onAccessAdded={fetchEmployeeDetails} // Refresh access list
+            />
+            <EditEmployeeModal
+              employee={{ ...employee, jobTitle: employee.jobTitle || "" }}
+              onUpdate={fetchEmployeeDetails} // Refresh employee details
             />
           </div>
         </div>
