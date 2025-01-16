@@ -20,9 +20,14 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
-import AddAccessModal from "./AddAccessModal";
 
-export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
+export default function AddEmployeeModal({
+  onAdd,
+  addEmployeeToTop,
+}: {
+  onAdd?: () => void;
+  addEmployeeToTop: (newEmployee: any) => void; // Callback to prepend the new employee
+}) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -77,14 +82,14 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
         }
       );
 
-      const employeeId = employeeResponse.data.employeeID;
+      const newEmployee = employeeResponse.data;
 
       // Step 2: Add the selected accesses for the new employee
       if (selectedAccesses.length > 0) {
         await Promise.all(
           selectedAccesses.map((accessName) =>
             axios.post(
-              `http://localhost:5000/api/employees/${employeeId}/accesses`,
+              `http://localhost:5000/api/employees/${newEmployee.employeeID}/accesses`,
               {
                 applicationName: accessName,
               }
@@ -92,6 +97,9 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
           )
         );
       }
+
+      // Add the new employee to the top of the table
+      addEmployeeToTop(newEmployee);
 
       // Reset form data and selected accesses
       setFormData({
@@ -111,9 +119,7 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
       });
 
       if (onAdd) {
-        onAdd(); // Refresh the employee table
-      } else {
-        window.location.reload(); // Refresh the page if no onAdd callback is provided
+        onAdd(); // Refresh the employee table if needed
       }
     } catch (error) {
       console.error("Error adding employee:", error);

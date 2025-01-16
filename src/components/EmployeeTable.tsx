@@ -63,6 +63,14 @@ export default function EmployeeTable() {
     }
   };
 
+  const addEmployeeToTop = (newEmployee: Employee) => {
+    // Add the new employee to the top of the table
+    setEmployees((prev) => [newEmployee, ...prev.slice(0, pageSize - 1)]);
+
+    // Reset to the first page
+    setPage(1);
+  };
+
   useEffect(() => {
     fetchEmployees();
   }, [search, status, page]);
@@ -89,7 +97,10 @@ export default function EmployeeTable() {
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
-        <AddEmployeeModal onAdd={fetchEmployees} />
+        <AddEmployeeModal
+          onAdd={fetchEmployees} // Optional: to refresh employees
+          addEmployeeToTop={addEmployeeToTop} // Prepend the new employee
+        />
       </div>
 
       {/* Table */}
@@ -115,7 +126,7 @@ export default function EmployeeTable() {
           ) : employees.length > 0 ? (
             employees.map((employee, index) => (
               <TableRow key={employee.employeeID}>
-                <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{employee.firstName}</TableCell>
                 <TableCell>{employee.lastName}</TableCell>
                 <TableCell>{employee.email}</TableCell>
