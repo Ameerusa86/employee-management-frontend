@@ -32,6 +32,8 @@ export default function EmployeeTable() {
   const [page, setPage] = useState(1); // Current page
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [totalEmployees, setTotalEmployees] = useState(0); // Total employees count
+
   const router = useRouter();
 
   const pageSize = 10; // Employees per page
@@ -53,6 +55,7 @@ export default function EmployeeTable() {
       const { employees = [], totalEmployees = 0 } = response.data;
 
       setEmployees(employees);
+      setTotalEmployees(totalEmployees); // Set total count
       setTotalPages(Math.ceil(totalEmployees / pageSize));
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -77,7 +80,9 @@ export default function EmployeeTable() {
 
   return (
     <div className="bg-white p-4 shadow rounded">
-      <h3 className="text-lg font-bold mb-4">Employees</h3>
+      <h3 className="text-lg font-bold mb-4">
+        Total Employees: <span>{totalEmployees}</span>
+      </h3>
 
       {/* Search and Filter */}
       <div className="flex gap-4 mb-4">
