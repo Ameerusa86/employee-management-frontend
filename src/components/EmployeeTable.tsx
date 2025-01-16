@@ -66,110 +66,120 @@ export default function EmployeeTable() {
     }
   };
 
-  const addEmployeeToTop = (newEmployee: Employee) => {
-    // Add the new employee to the top of the table
-    setEmployees((prev) => [newEmployee, ...prev.slice(0, pageSize - 1)]);
-
-    // Reset to the first page
-    setPage(1);
-  };
-
   useEffect(() => {
     fetchEmployees();
   }, [search, status, page]);
 
   return (
-    <div className="bg-white p-4 shadow rounded">
-      <h3 className="text-lg font-bold mb-4">
+    <div className="bg-white p-6 shadow-lg rounded-lg w-full max-w-screen-2xl">
+      <h3 className="text-xl font-bold mb-4">
         Total Employees: <span>{totalEmployees}</span>
       </h3>
 
       {/* Search and Filter */}
-      <div className="flex gap-4 mb-4">
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
         <input
           type="text"
           placeholder="Search by name or email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded p-2 w-1/2"
+          className="border rounded-lg p-3 w-full md:w-1/2"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="border rounded p-2 w-1/4"
+          className="border rounded-lg p-3 w-full md:w-1/4"
         >
           <option value="">All Statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
         <AddEmployeeModal
-          onAdd={fetchEmployees} // Optional: to refresh employees
-          addEmployeeToTop={addEmployeeToTop} // Prepend the new employee
+          onAdd={fetchEmployees}
+          addEmployeeToTop={(newEmployee) =>
+            setEmployees([newEmployee, ...employees])
+          }
         />
       </div>
 
-      {/* Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>#</TableHead>
-            <TableHead>First Name</TableHead>
-            <TableHead>Last Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Job Title</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center">
-                Loading...
-              </TableCell>
+      {/* Responsive Table */}
+      <div className="overflow-x-auto">
+        <Table className="w-full text-left border-collapse border border-gray-200">
+          <TableHeader>
+            <TableRow className="bg-gray-100">
+              <TableHead>#</TableHead>
+              <TableHead>First Name</TableHead>
+              <TableHead>Last Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Job Title</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
-          ) : employees.length > 0 ? (
-            employees.map((employee, index) => (
-              <TableRow key={employee.employeeID}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{employee.firstName}</TableCell>
-                <TableCell>{employee.lastName}</TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.jobTitle}</TableCell>
-                <TableCell>{employee.accountStatus}</TableCell>
-                <TableCell className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      router.push(`/employees/${employee.employeeID}`)
-                    }
-                  >
-                    View Details
-                  </Button>
-                  <EditEmployeeModal
-                    employee={employee}
-                    onUpdate={fetchEmployees}
-                  />
-                  <DeleteConfirmationModal
-                    employeeId={employee.employeeID}
-                    employeeName={`${employee.firstName} ${employee.lastName}`}
-                    onDelete={fetchEmployees}
-                  />
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center p-4">
+                  Loading...
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center">
-                No employees found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ) : employees.length > 0 ? (
+              employees.map((employee, index) => (
+                <TableRow
+                  key={employee.employeeID}
+                  className="hover:bg-gray-50"
+                >
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{employee.firstName}</TableCell>
+                  <TableCell>{employee.lastName}</TableCell>
+                  <TableCell>{employee.email}</TableCell>
+                  <TableCell>{employee.jobTitle}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`${
+                        employee.accountStatus === "Active"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      } font-semibold`}
+                    >
+                      {employee.accountStatus}
+                    </span>
+                  </TableCell>
+
+                  <TableCell className="flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        router.push(`/employees/${employee.employeeID}`)
+                      }
+                    >
+                      View
+                    </Button>
+                    <EditEmployeeModal
+                      employee={employee}
+                      onUpdate={fetchEmployees}
+                    />
+                    <DeleteConfirmationModal
+                      employeeId={employee.employeeID}
+                      employeeName={`${employee.firstName} ${employee.lastName}`}
+                      onDelete={fetchEmployees}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center p-4">
+                  No employees found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
+      <div className="flex justify-between items-center mt-6">
         <Button
           onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
           disabled={page === 1}

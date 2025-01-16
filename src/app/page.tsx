@@ -1,13 +1,11 @@
-import AddEmployeeModal from "@/components/AddEmployeeModal";
 import EmployeeTable from "@/components/EmployeeTable";
 import Layout from "@/components/Layout";
-import Image from "next/image";
 
 export default function Home() {
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-screen py-2">
-        <main className="p-6 max-w-screen-2xl">
+        <main className="p-6 w-full max-w-screen-2xl">
           <h1 className="text-6xl font-bold mb-6 text-center">
             Employee Management
           </h1>
