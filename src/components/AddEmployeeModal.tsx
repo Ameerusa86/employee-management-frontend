@@ -28,6 +28,7 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
     email: "",
     jobTitle: "",
     accountStatus: "Active",
+    company: "",
   });
 
   const [availableAccesses, setAvailableAccesses] = useState<string[]>([]); // List of accesses from the database
@@ -98,6 +99,7 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
         email: "",
         jobTitle: "",
         accountStatus: "Active",
+        company: "",
       });
       setSelectedAccesses([]);
 
@@ -159,6 +161,13 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
               setFormData({ ...formData, jobTitle: e.target.value })
             }
           />
+          <Input
+            placeholder="Company"
+            value={formData.company}
+            onChange={(e) =>
+              setFormData({ ...formData, company: e.target.value })
+            }
+          />
 
           {/* Add Accesses Section */}
           <div>
@@ -198,6 +207,7 @@ export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
                   email: "",
                   jobTitle: "",
                   accountStatus: "Active",
+                  company: "",
                 });
                 setSelectedAccesses([]);
               }}

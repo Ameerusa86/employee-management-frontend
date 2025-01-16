@@ -118,7 +118,10 @@ export default function EmployeeDetails() {
             <h1 className="text-3xl font-bold text-gray-800">
               {employee.firstName} {employee.lastName}
             </h1>
-            <p className="text-gray-600 mt-2">{employee.email}</p>
+            <p className="text-gray-500 mt-2">
+              <strong>Email: </strong>
+              {employee.email}
+            </p>
             <p className="text-gray-500 mt-1">
               <strong>Job Title:</strong> {employee.jobTitle || "N/A"}
             </p>

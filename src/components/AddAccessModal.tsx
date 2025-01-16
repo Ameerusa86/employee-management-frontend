@@ -1,22 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddAccessModalProps {
   employeeId: number;
   onAccessAdded: () => void; // Callback to refresh access list
 }
-
-const predefinedAccesses = [
-  { id: "aws", name: "AWS" },
-  { id: "jira", name: "JIRA" },
-  { id: "slack", name: "Slack" },
-  { id: "github", name: "GitHub" },
-  { id: "azure", name: "Azure" },
-  { id: "salesforce", name: "Salesforce" },
-];
 
 export default function AddAccessModal({
   employeeId,
@@ -24,41 +19,95 @@ export default function AddAccessModal({
 }: AddAccessModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredAccesses, setFilteredAccesses] = useState(predefinedAccesses);
-  const [selectedAccess, setSelectedAccess] = useState<string | null>(null);
+  const [filteredApplications, setFilteredApplications] = useState<any[]>([]);
+  const [availableApplications, setAvailableApplications] = useState<any[]>([]);
+  const [selectedApplications, setSelectedApplications] = useState<string[]>(
+    []
+  ); // Selected applications
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { toast } = useToast();
+
+  // Fetch all applications from the database
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/applications"
+        );
+        setAvailableApplications(response.data);
+        setFilteredApplications(response.data); // Default to all applications
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+        toast({
+          title: "Failed to Load Applications",
+          description:
+            "Could not fetch available applications. Please try again later.",
+        });
+      }
+    };
+
+    fetchApplications();
+  }, []);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    setFilteredAccesses(
-      predefinedAccesses.filter((access) =>
-        access.name.toLowerCase().includes(term.toLowerCase())
+    setFilteredApplications(
+      availableApplications.filter((application: any) =>
+        application.applicationName.toLowerCase().includes(term.toLowerCase())
       )
     );
   };
 
+  const toggleSelection = (applicationName: string) => {
+    setSelectedApplications(
+      (prevSelected) =>
+        prevSelected.includes(applicationName)
+          ? prevSelected.filter((name) => name !== applicationName) // Deselect
+          : [...prevSelected, applicationName] // Select
+    );
+  };
+
+  const handleRowClick = (applicationName: string) => {
+    toggleSelection(applicationName);
+  };
+
   const handleSubmit = async () => {
-    if (!selectedAccess) {
-      alert("Please select an access.");
+    if (selectedApplications.length === 0) {
+      toast({
+        title: "No Applications Selected",
+        description:
+          "Please select at least one application before submitting.",
+      });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await axios.post(`http://localhost:5000/api/accessrights/${employeeId}`, {
-        accessName: selectedAccess,
-        dateGranted: new Date().toISOString(),
-      });
+      await Promise.all(
+        selectedApplications.map((applicationName) =>
+          axios.post(
+            `http://localhost:5000/api/employees/${employeeId}/accesses`,
+            {
+              applicationName,
+              dateGranted: new Date().toISOString(),
+            }
+          )
+        )
+      );
 
       onAccessAdded(); // Refresh access list in the parent
       setIsOpen(false); // Close the modal
-      setSelectedAccess(null); // Reset selection
+      setSelectedApplications([]); // Reset selection
       setSearchTerm(""); // Reset search
-      setFilteredAccesses(predefinedAccesses); // Reset list
+      setFilteredApplications(availableApplications); // Reset list
     } catch (err) {
-      console.error("Error adding access:", err);
-      alert("Failed to add access. Please try again.");
+      console.error("Error adding application access:", err);
+      toast({
+        title: "Failed to Add Access",
+        description: "An error occurred while adding access. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -66,37 +115,46 @@ export default function AddAccessModal({
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)}>Add Access</Button>
+      <Button onClick={() => setIsOpen(true)}>Add Application Access</Button>
 
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4">Add Access Right</h2>
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+            <h2 className="text-xl font-bold mb-4">Add Application Access</h2>
 
             <div className="mb-4">
-              <input
+              <Input
                 type="text"
-                placeholder="Search accesses..."
+                placeholder="Search applications..."
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg mb-2"
+                className="w-full p-2 mb-4"
               />
-              <div className="relative">
-                <select
-                  className="w-full p-2 border border-gray-300 rounded-lg"
-                  value={selectedAccess || ""}
-                  onChange={(e) => setSelectedAccess(e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select an access
-                  </option>
-                  {filteredAccesses.map((access) => (
-                    <option key={access.id} value={access.name}>
-                      {access.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <ScrollArea className="h-60 border rounded-lg overflow-y-auto p-2">
+                {filteredApplications.map((application: any) => (
+                  <div
+                    key={application.applicationID}
+                    className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${
+                      selectedApplications.includes(application.applicationName)
+                        ? "bg-blue-100"
+                        : "hover:bg-gray-100"
+                    }`}
+                    onClick={() => handleRowClick(application.applicationName)} // Toggle selection on row click
+                  >
+                    <div className="font-medium">
+                      {application.applicationName}
+                    </div>
+                    <Checkbox
+                      checked={selectedApplications.includes(
+                        application.applicationName
+                      )}
+                      onCheckedChange={() =>
+                        toggleSelection(application.applicationName)
+                      }
+                    />
+                  </div>
+                ))}
+              </ScrollArea>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -104,9 +162,9 @@ export default function AddAccessModal({
                 variant="outline"
                 onClick={() => {
                   setIsOpen(false);
-                  setSelectedAccess(null); // Reset selection
-                  setSearchTerm(""); // Reset search
-                  setFilteredAccesses(predefinedAccesses); // Reset list
+                  setSelectedApplications([]);
+                  setSearchTerm("");
+                  setFilteredApplications(availableApplications);
                 }}
                 disabled={isSubmitting}
               >
@@ -115,7 +173,7 @@ export default function AddAccessModal({
               <Button
                 className="ml-2"
                 onClick={handleSubmit}
-                disabled={isSubmitting || !selectedAccess}
+                disabled={isSubmitting || selectedApplications.length === 0}
               >
                 {isSubmitting ? "Adding..." : "Add Access"}
               </Button>
