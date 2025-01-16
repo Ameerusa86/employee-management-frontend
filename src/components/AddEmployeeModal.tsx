@@ -20,6 +20,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
+import AddAccessModal from "./AddAccessModal";
 
 export default function AddEmployeeModal({ onAdd }: { onAdd?: () => void }) {
   const [formData, setFormData] = useState({
