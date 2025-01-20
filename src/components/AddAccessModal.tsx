@@ -24,31 +24,43 @@ export default function AddAccessModal({
   const [selectedApplications, setSelectedApplications] = useState<string[]>(
     []
   ); // Selected applications
+  const [existingAccesses, setExistingAccesses] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
 
-  // Fetch all applications from the database
+  // Fetch existing accesses and available applications
   useEffect(() => {
-    const fetchApplications = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/applications"
+        // Fetch all applications
+        const [applicationsResponse, accessesResponse] = await Promise.all([
+          axios.get("http://localhost:5000/api/applications"),
+          axios.get(
+            `http://localhost:5000/api/employees/${employeeId}/accesses`
+          ),
+        ]);
+
+        const applications = applicationsResponse.data;
+        const accesses = accessesResponse.data.map(
+          (access: any) => access.application.applicationName
         );
-        setAvailableApplications(response.data);
-        setFilteredApplications(response.data); // Default to all applications
+
+        setAvailableApplications(applications);
+        setFilteredApplications(applications); // Default to all applications
+        setExistingAccesses(accesses); // Store existing accesses for the employee
       } catch (error) {
-        console.error("Error fetching applications:", error);
+        console.error("Error fetching data:", error);
         toast({
-          title: "Failed to Load Applications",
+          title: "Failed to Load Data",
           description:
-            "Could not fetch available applications. Please try again later.",
+            "Could not fetch applications or accesses. Please try again later.",
         });
       }
     };
 
-    fetchApplications();
-  }, []);
+    fetchData();
+  }, [employeeId]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -60,6 +72,14 @@ export default function AddAccessModal({
   };
 
   const toggleSelection = (applicationName: string) => {
+    if (existingAccesses.includes(applicationName)) {
+      toast({
+        title: "Duplicate Access",
+        description: `${applicationName} is already assigned to this employee.`,
+      });
+      return;
+    }
+
     setSelectedApplications(
       (prevSelected) =>
         prevSelected.includes(applicationName)
@@ -85,17 +105,42 @@ export default function AddAccessModal({
     setIsSubmitting(true);
 
     try {
+      const failedApplications: string[] = [];
+
+      // Submit selected applications one by one
       await Promise.all(
-        selectedApplications.map((applicationName) =>
-          axios.post(
-            `http://localhost:5000/api/employees/${employeeId}/accesses`,
-            {
-              applicationName,
-              dateGranted: new Date().toISOString(),
+        selectedApplications.map(async (applicationName) => {
+          try {
+            await axios.post(
+              `http://localhost:5000/api/employees/${employeeId}/accesses`,
+              {
+                applicationName,
+                dateGranted: new Date().toISOString(),
+              }
+            );
+          } catch (err: any) {
+            if (err.response?.status === 409) {
+              failedApplications.push(applicationName); // Track duplicate errors
+            } else {
+              throw err; // Re-throw other errors
             }
-          )
-        )
+          }
+        })
       );
+
+      if (failedApplications.length > 0) {
+        toast({
+          title: "Some Accesses Failed",
+          description: `The following accesses could not be added because they already exist: ${failedApplications.join(
+            ", "
+          )}.`,
+        });
+      } else {
+        toast({
+          title: "Accesses Added Successfully",
+          description: "The selected accesses have been added.",
+        });
+      }
 
       onAccessAdded(); // Refresh access list in the parent
       setIsOpen(false); // Close the modal
@@ -137,9 +182,14 @@ export default function AddAccessModal({
                     className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${
                       selectedApplications.includes(application.applicationName)
                         ? "bg-blue-100"
+                        : existingAccesses.includes(application.applicationName)
+                        ? "bg-red-100 text-gray-500 cursor-not-allowed"
                         : "hover:bg-gray-100"
                     }`}
-                    onClick={() => handleRowClick(application.applicationName)} // Toggle selection on row click
+                    onClick={() =>
+                      !existingAccesses.includes(application.applicationName) &&
+                      handleRowClick(application.applicationName)
+                    } // Disable click for existing accesses
                   >
                     <div className="font-medium">
                       {application.applicationName}
@@ -151,6 +201,9 @@ export default function AddAccessModal({
                       onCheckedChange={() =>
                         toggleSelection(application.applicationName)
                       }
+                      disabled={existingAccesses.includes(
+                        application.applicationName
+                      )}
                     />
                   </div>
                 ))}
