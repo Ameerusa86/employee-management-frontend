@@ -32,33 +32,40 @@ export default function EditEmployeeModal({
 }) {
   const [formData, setFormData] = useState<Employee>({ ...employee });
   const [isOpen, setIsOpen] = useState(false); // Track modal state
-
   const { toast } = useToast();
 
   const handleSubmit = async () => {
     try {
-      await axios.put(
-        `http://localhost:5000/api/employees/${employee.employeeID}`,
-        formData
-      );
+      if (formData.accountStatus !== employee.accountStatus) {
+        // Update account status
+        await axios.patch(
+          `http://localhost:5000/api/employees/${employee.employeeID}/status`,
+          formData.accountStatus,
+          { headers: { "Content-Type": "application/json" } }
+        );
+      } else {
+        // Update other fields
+        await axios.put(
+          `http://localhost:5000/api/employees/${employee.employeeID}`,
+          formData,
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       onUpdate(); // Trigger a refresh in the parent component
       setIsOpen(false); // Close modal after successful update
       toast({
-        title: `${formData.firstName} ${formData.lastName} updated successfully`,
-        description: `Employee has been updated.`,
+        title: "Employee Updated",
+        description: `${formData.firstName} ${formData.lastName} has been successfully updated.`,
+        variant: "default",
       });
     } catch (error) {
-      console.error(
-        "Error updating employee:",
-        axios.isAxiosError(error) && error.response
-          ? error.response.data
-          : (error as Error).message
-      );
-      alert(
-        axios.isAxiosError(error) && error.response
-          ? `Failed to update employee: ${error.response.data}`
-          : "Failed to update employee. Please try again later."
-      );
+      console.error("Error updating employee:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update employee. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -113,11 +120,9 @@ export default function EditEmployeeModal({
           </select>
         </div>
         <DialogFooter>
-          {/* Cancel Button */}
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
-          {/* Save Changes Button */}
           <Button onClick={handleSubmit}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>

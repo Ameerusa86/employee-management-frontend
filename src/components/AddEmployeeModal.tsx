@@ -72,7 +72,7 @@ export default function AddEmployeeModal({
 
   const handleSubmit = async () => {
     try {
-      // Step 1: Create the new employee
+      // Create the new employee
       const employeeResponse = await axios.post(
         "http://localhost:5000/api/employees",
         formData
@@ -80,7 +80,7 @@ export default function AddEmployeeModal({
 
       const newEmployee = employeeResponse.data;
 
-      // Step 2: Add the selected accesses for the new employee
+      // Add the selected accesses for the new employee
       if (selectedAccesses.length > 0) {
         await Promise.all(
           selectedAccesses.map((accessName) =>
