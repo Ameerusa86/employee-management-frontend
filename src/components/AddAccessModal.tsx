@@ -33,7 +33,7 @@ export default function AddAccessModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all applications
+        // Fetch all applications and accesses
         const [applicationsResponse, accessesResponse] = await Promise.all([
           axios.get("http://localhost:5000/api/applications"),
           axios.get(
@@ -42,13 +42,13 @@ export default function AddAccessModal({
         ]);
 
         const applications = applicationsResponse.data;
-        const accesses = accessesResponse.data.map(
-          (access: any) => access.application.applicationName
-        );
+        const accesses = accessesResponse.data.map((access: any) => {
+          return access.application?.applicationName || "Unknown";
+        });
 
         setAvailableApplications(applications);
-        setFilteredApplications(applications); // Default to all applications
-        setExistingAccesses(accesses); // Store existing accesses for the employee
+        setFilteredApplications(applications);
+        setExistingAccesses(accesses);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -103,55 +103,66 @@ export default function AddAccessModal({
     }
 
     setIsSubmitting(true);
+    const failedApplications: string[] = [];
+    const duplicateApplications: string[] = [];
 
     try {
-      const failedApplications: string[] = [];
-
-      // Submit selected applications one by one
       await Promise.all(
         selectedApplications.map(async (applicationName) => {
           try {
-            await axios.post(
+            const response = await axios.post(
               `http://localhost:5000/api/employees/${employeeId}/accesses`,
-              {
-                applicationName,
-                dateGranted: new Date().toISOString(),
-              }
+              { applicationName }
             );
+            if (response.status === 409) {
+              duplicateApplications.push(applicationName);
+            }
           } catch (err: any) {
             if (err.response?.status === 409) {
-              failedApplications.push(applicationName); // Track duplicate errors
+              duplicateApplications.push(applicationName);
             } else {
-              throw err; // Re-throw other errors
+              failedApplications.push(applicationName);
             }
           }
         })
       );
 
-      if (failedApplications.length > 0) {
+      if (duplicateApplications.length > 0) {
         toast({
-          title: "Some Accesses Failed",
-          description: `The following accesses could not be added because they already exist: ${failedApplications.join(
+          title: "Duplicate Accesses",
+          description: `The following accesses already exist: ${duplicateApplications.join(
             ", "
           )}.`,
         });
-      } else {
+      }
+
+      if (failedApplications.length > 0) {
+        toast({
+          title: "Failed to Add Access",
+          description: `Failed to add the following accesses: ${failedApplications.join(
+            ", "
+          )}.`,
+        });
+      }
+
+      if (
+        duplicateApplications.length === 0 &&
+        failedApplications.length === 0
+      ) {
         toast({
           title: "Accesses Added Successfully",
           description: "The selected accesses have been added.",
         });
       }
 
-      onAccessAdded(); // Refresh access list in the parent
-      setIsOpen(false); // Close the modal
+      onAccessAdded(); // Refresh the access list
+      setIsOpen(false); // Close modal
       setSelectedApplications([]); // Reset selection
-      setSearchTerm(""); // Reset search
-      setFilteredApplications(availableApplications); // Reset list
-    } catch (err) {
-      console.error("Error adding application access:", err);
+    } catch (error) {
+      console.error("Error adding accesses:", error);
       toast({
-        title: "Failed to Add Access",
-        description: "An error occurred while adding access. Please try again.",
+        title: "Error",
+        description: "An error occurred while adding accesses.",
       });
     } finally {
       setIsSubmitting(false);
@@ -189,10 +200,10 @@ export default function AddAccessModal({
                     onClick={() =>
                       !existingAccesses.includes(application.applicationName) &&
                       handleRowClick(application.applicationName)
-                    } // Disable click for existing accesses
+                    }
                   >
                     <div className="font-medium">
-                      {application.applicationName}
+                      {application.applicationName || "Unknown"}
                     </div>
                     <Checkbox
                       checked={selectedApplications.includes(

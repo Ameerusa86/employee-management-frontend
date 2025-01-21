@@ -75,11 +75,7 @@ export default function AddEmployeeModal({
       // Step 1: Create the new employee
       const employeeResponse = await axios.post(
         "http://localhost:5000/api/employees",
-        {
-          ...formData,
-          dateCreated: new Date().toISOString(),
-          dateModified: new Date().toISOString(),
-        }
+        formData
       );
 
       const newEmployee = employeeResponse.data;
@@ -123,8 +119,9 @@ export default function AddEmployeeModal({
       }
     } catch (error) {
       console.error("Error adding employee:", error);
+
       toast({
-        title: `${formData.firstName} ${formData.lastName} Failed to be Added`,
+        title: "Failed to Add Employee",
         description: "An error occurred while adding the employee or accesses.",
       });
     }
@@ -205,22 +202,7 @@ export default function AddEmployeeModal({
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setFormData({
-                  firstName: "",
-                  lastName: "",
-                  email: "",
-                  jobTitle: "",
-                  accountStatus: "Active",
-                  company: "",
-                });
-                setSelectedAccesses([]);
-              }}
-            >
-              Cancel
-            </Button>
+            <Button variant="outline">Cancel</Button>
           </DialogClose>
           <Button onClick={handleSubmit}>Submit</Button>
         </DialogFooter>
