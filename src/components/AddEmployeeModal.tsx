@@ -117,13 +117,38 @@ export default function AddEmployeeModal({
       if (onAdd) {
         onAdd(); // Refresh the employee table if needed
       }
-    } catch (error) {
-      console.error("Error adding employee:", error);
-
-      toast({
-        title: "Failed to Add Employee",
-        description: "An error occurred while adding the employee or accesses.",
-      });
+    } catch (error: any) {
+      // Handle specific error codes
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 409) {
+          toast({
+            title: "Duplicate Entry",
+            description: "An employee with the same email already exists.",
+            variant: "destructive",
+          });
+        } else if (error.response?.status === 400) {
+          toast({
+            title: "Validation Error",
+            description:
+              "Please ensure all required fields are filled correctly.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Failed to Add Employee",
+            description:
+              "An error occurred while adding the employee or accesses.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.error("Unknown error occurred:", error);
+        toast({
+          title: "Unexpected Error",
+          description: "An unexpected error occurred. Please try again later.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
