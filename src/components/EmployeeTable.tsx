@@ -15,6 +15,7 @@ import EditEmployeeModal from "@/components/EditEmployeeModal";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import AddEmployeeModal from "./AddEmployeeModal";
 import { useRouter } from "next/navigation";
+import Loading from "./Loading";
 
 interface Employee {
   employeeID: number;
@@ -120,7 +121,7 @@ export default function EmployeeTable() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center p-4">
-                  Loading...
+                  <Loading />
                 </TableCell>
               </TableRow>
             ) : employees.length > 0 ? (

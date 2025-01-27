@@ -14,6 +14,7 @@ import SaveButton from "@/components/SaveButton";
 import AddAccessModal from "@/components/AddAccessModal";
 import EditEmployeeModal from "@/components/EditEmployeeModal";
 import { Button } from "@/components/ui/button";
+import Loading from "@/components/Loading";
 
 export default function EmployeeDetails() {
   const { id } = useParams();
@@ -66,7 +67,7 @@ export default function EmployeeDetails() {
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p className="text-gray-500 text-lg">Loading...</p>
+        <Loading />
       </div>
     );
   if (error)

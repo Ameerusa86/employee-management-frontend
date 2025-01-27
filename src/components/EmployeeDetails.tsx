@@ -15,6 +15,7 @@ import AddAccessModal from "@/components/AddAccessModal";
 import EditEmployeeModal from "@/components/EditEmployeeModal";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast"; // Assuming you're using a toast hook for notifications
+import Loading from "./Loading";
 
 export default function EmployeeDetails() {
   const { id } = useParams();
@@ -87,7 +88,7 @@ export default function EmployeeDetails() {
     fetchDetails();
   }, [id]);
 
-  if (loading) return <p className="text-gray-500">Loading...</p>;
+  if (loading) return <Loading />;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!employee) return <p className="text-gray-500">Employee not found.</p>;
 
